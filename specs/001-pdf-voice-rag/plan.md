@@ -1,7 +1,7 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: PDF Document Management with Voice-Based RAG Search
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `001-pdf-voice-rag` | **Date**: 2026-03-12 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/001-pdf-voice-rag/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
@@ -29,7 +29,7 @@ Enable users to upload, scan (OCR), organize, and share PDF/physical documents, 
 
 **Language/Version**: TypeScript (ES2022+), Node.js 20+ LTS, React 18+
 **Primary Dependencies**: NestJS, React, Vite, Tailwind CSS, @zilliz/milvus2-sdk-node, Faster-Whisper, Ollama, Piper/Kokoro, Pipecat, class-validator, class-transformer, Axios or Fetch, ESLint, Prettier, Husky, lint-staged, Vitest
-**Storage**: Milvus 2.3+ (vector database, Zilliz SDK), persistent volumes (Docker)
+**Storage**: Milvus 2.3+ (vector database, Zilliz SDK), PostgreSQL 15+ (relational/metadata, Prisma ORM), persistent volumes (Docker)
 **Testing**: Vitest (unit/integration), Playwright (optional E2E), built-in mocks
 **Target Platform**: Linux server (backend), modern browsers (frontend), Docker Compose (all services)
 **Project Type**: Full-stack web application (API-first, RAG, real-time audio)
@@ -42,17 +42,17 @@ Enable users to upload, scan (OCR), organize, and share PDF/physical documents, 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 
-**Gates (from S2S-RAG Constitution v2.0.0):**
+**Gates (from S2S-RAG Constitution v2.2.0):**
 
 1. **API-First**: Satisfied (OpenAPI contract, NestJS REST endpoints, no direct DB access from frontend)
 2. **Type Safety**: Satisfied (TypeScript everywhere, shared types, no type assertions)
-3. **Test-Driven Development**: Satisfied (Vitest, TDD, coverage, integration tests planned)
+3. **Test-Driven Development**: Satisfied (Vitest, Red-Green-Refactor, test tasks precede implementation in each phase, ≥80% coverage, integration tests planned)
 4. **Local-First AI**: Satisfied (Faster-Whisper, Ollama, Piper/Kokoro, Pipecat, all local)
-5. **Container-Based Deployment**: Satisfied (Docker Compose for all services, Milvus with persistent volumes, .env config, health checks)
+5. **Container-Based Deployment**: Satisfied (Docker Compose for all services, Milvus and PostgreSQL with persistent volumes, .env config, health checks)
 6. **Real-Time Audio**: Satisfied (streaming audio, Pipecat, STT/TTS streaming, latency targets, error handling)
-7. **Technology Stack**: Satisfied (Milvus, Zilliz SDK, NestJS, React, Vite, Vitest, ESLint, Prettier, Husky, lint-staged, Playwright, class-validator, class-transformer)
+7. **Technology Stack**: Satisfied (Milvus, Zilliz SDK, PostgreSQL 15+, Prisma ORM, NestJS, React, Vite, Tailwind CSS, Vitest, ESLint, Prettier, Husky, lint-staged, Playwright, class-validator, class-transformer)
 8. **Documentation**: Satisfied (spec, OpenAPI, quickstart, vector schema, agent context)
-9. **Branching/Workflow**: Satisfied (feature branch, PR/test/lint/coverage, code review, versioning)
+9. **Branching/Workflow**: Satisfied (feature branch `001-pdf-voice-rag` created, PR/test/lint/coverage, code review, versioning)
 10. **Compliance**: Satisfied (all gates checked, no violations)
 
 ## Project Structure
@@ -78,49 +78,42 @@ specs/[###-feature]/
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
 ├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+│   ├── auth/            # JWT authentication
+│   ├── controllers/     # REST endpoints (documents, folders, voice, recycle-bin)
+│   ├── db/              # Prisma / PostgreSQL setup
+│   ├── entities/        # User, Document, Folder, FolderShare, RecycleBin models
+│   ├── guards/          # Access control guards
+│   ├── jobs/            # Scheduled jobs (recycle-bin cleanup)
+│   ├── middleware/       # Error handling, validation
+│   ├── services/        # Business logic (documents, folders, STT, LLM, TTS, OCR)
+│   ├── types/           # Shared TypeScript types / DTOs
+│   └── vector/          # Milvus / Zilliz SDK integration
+├── tests/
+│   ├── integration/
+│   └── unit/
+├── main.ts              # NestJS bootstrap + Swagger setup
+└── Dockerfile
 
 frontend/
 ├── src/
-│   ├── components/
+│   ├── components/      # Upload, VoiceInput, Answer, OCRUpload, FolderTree,
+│   │                    #   ShareFolder, RecycleBin, LanguageSettings
 │   ├── pages/
-│   └── services/
-└── tests/
+│   ├── services/        # API client calls
+│   └── types/           # Shared types (mirrors backend DTOs)
+├── tests/
+├── index.html
+└── Dockerfile
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+specs/001-pdf-voice-rag/ # Feature documentation (this plan and related files)
+docker-compose.yml       # All services: backend, frontend, Milvus, PostgreSQL, AI
+.env.example
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Web application layout (Option 2) — separate `backend/` (NestJS) and `frontend/` (React + Vite + Tailwind CSS) directories. Milvus handles vector storage; PostgreSQL handles relational/metadata.
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+> No constitution violations to justify.
