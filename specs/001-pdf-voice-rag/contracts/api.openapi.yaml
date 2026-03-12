@@ -1,0 +1,115 @@
+openapi: 3.0.3
+info:
+  title: PDF Voice RAG API
+  version: 0.1.0
+  description: REST API contract for PDF/voice RAG app (upload, OCR, voice Q&A, sharing)
+servers:
+  - url: /api
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Invalid credentials
+  /documents:
+    post:
+      summary: Upload PDF or photo for OCR
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                folderId:
+                  type: string
+      responses:
+        '201':
+          description: Document uploaded
+        '400':
+          description: Invalid file or folder
+    get:
+      summary: List user documents
+      responses:
+        '200':
+          description: List of documents
+  /documents/{id}/query:
+    post:
+      summary: Voice Q&A on document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Spoken answer and citation
+        '404':
+          description: Document not found
+  /folders:
+    post:
+      summary: Create folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                parentFolderId:
+                  type: string
+      responses:
+        '201':
+          description: Folder created
+    get:
+      summary: List user folders
+      responses:
+        '200':
+          description: List of folders
+  /folders/{id}/share:
+    post:
+      summary: Share folder with user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Folder shared
+        '400':
+          description: Invalid or non-existent email
+  /recycle-bin:
+    get:
+      summary: List recycle bin items
+      responses:
+        '200':
+          description: List of deleted items
