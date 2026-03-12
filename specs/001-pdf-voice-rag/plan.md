@@ -12,7 +12,7 @@ Enable users to upload, scan (OCR), organize, and share PDF/physical documents, 
 
 **Technical Approach:**
 - Backend: NestJS (TypeScript), REST API, all endpoints documented via OpenAPI/Swagger, containerized.
-- Frontend: React (TypeScript), Vite, API-first, voice input/output, real-time streaming audio.
+- Frontend: React (TypeScript), Vite, Tailwind CSS (mandatory for all UI), API-first, voice input/output, real-time streaming audio.
 - Vector Search: Milvus 2.3+ (containerized), Zilliz SDK for all vector operations, persistent volumes for storage.
 - AI: Faster-Whisper (STT), Ollama (LLM), Piper/Kokoro (TTS), Pipecat (audio pipeline), all running locally in containers.
 - Testing: Vitest (unit/integration), Playwright (optional E2E), ≥80% coverage, TDD enforced.
@@ -28,13 +28,13 @@ Enable users to upload, scan (OCR), organize, and share PDF/physical documents, 
 -->
 
 **Language/Version**: TypeScript (ES2022+), Node.js 20+ LTS, React 18+
-**Primary Dependencies**: NestJS, React, Vite, @zilliz/milvus2-sdk-node, Faster-Whisper, Ollama, Piper/Kokoro, Pipecat, class-validator, class-transformer, Axios or Fetch, ESLint, Prettier, Husky, lint-staged, Vitest
+**Primary Dependencies**: NestJS, React, Vite, Tailwind CSS, @zilliz/milvus2-sdk-node, Faster-Whisper, Ollama, Piper/Kokoro, Pipecat, class-validator, class-transformer, Axios or Fetch, ESLint, Prettier, Husky, lint-staged, Vitest
 **Storage**: Milvus 2.3+ (vector database, Zilliz SDK), persistent volumes (Docker)
 **Testing**: Vitest (unit/integration), Playwright (optional E2E), built-in mocks
 **Target Platform**: Linux server (backend), modern browsers (frontend), Docker Compose (all services)
 **Project Type**: Full-stack web application (API-first, RAG, real-time audio)
 **Performance Goals**: End-to-end audio Q&A ≤2s for short queries; ≥80% test coverage; real-time streaming audio
-**Constraints**: Local-only AI (no external APIs), containerized, type-safe, offline-capable, no direct DB access from frontend, API versioning, ≥80% code coverage, health checks, .env config, German+English support
+**Constraints**: Local-only AI (no external APIs), containerized, type-safe, offline-capable, no direct DB access from frontend, API versioning, ≥80% code coverage, health checks, .env config, German+English support, Tailwind CSS required for all frontend UI
 **Scale/Scope**: Multi-user, multi-tenant, folder/document sharing, OCR, voice Q&A, scalable to 10k+ users, 100k+ documents, 1M+ vectors
 
 ## Constitution Check
