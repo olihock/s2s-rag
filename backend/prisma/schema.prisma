@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SupportedLanguage {
+  en
+  de
+}
+
+enum DocumentStatus {
+  active
+  excluded
+  recycle_bin
+}
+
+enum SharePermission {
+  read
+}
+
+enum RecycleBinItemType {
+  document
+  folder
+}
+
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  passwordHash      String
+  preferredLanguage SupportedLanguage @default(en)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  documents   Document[]
+  folders     Folder[]
+  sharedWith  FolderShare[]  @relation("RecipientShares")
+  voiceQueries VoiceQuery[]
+  recycleBin  RecycleBin[]
+}
+
+model Document {
+  id               String            @id @default(uuid())
+  ownerId          String
+  folderId         String?
+  filename         String
+  uploadDate       DateTime          @default(now())
+  fileSize         Int
+  contentText      String            @db.Text
+  detectedLanguage SupportedLanguage @default(en)
+  searchable       Boolean           @default(true)
+  status           DocumentStatus    @default(active)
+  ocrConfidence    Float?
+  metadata         Json              @default("{}")
+
+  owner    User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folder   Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([folderId])
+  @@index([status])
+}
+
+model Folder {
+  id             String   @id @default(uuid())
+  ownerId        String
+  name           String
+  parentFolderId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parent      Folder?       @relation("FolderChildren", fields: [parentFolderId], references: [id])
+  children    Folder[]      @relation("FolderChildren")
+  documents   Document[]
+  shares      FolderShare[]
+
+  @@unique([ownerId, name, parentFolderId])
+  @@index([ownerId])
+}
+
+model FolderShare {
+  id              String          @id @default(uuid())
+  folderId        String
+  recipientUserId String
+  permission      SharePermission @default(read)
+  grantedAt       DateTime        @default(now())
+
+  folder    Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  recipient User   @relation("RecipientShares", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, recipientUserId])
+  @@index([recipientUserId])
+}
+
+model VoiceQuery {
+  id              String   @id @default(uuid())
+  userId          String
+  transcribedText String   @db.Text
+  audioFileUrl    String?
+  timestamp       DateTime @default(now())
+  searchResultIds String[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RecycleBin {
+  id               String             @id @default(uuid())
+  userId           String
+  itemType         RecycleBinItemType
+  itemId           String
+  deletedAt        DateTime           @default(now())
+  originalLocation String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deletedAt])
+}

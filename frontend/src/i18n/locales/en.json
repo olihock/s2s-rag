@@ -1,0 +1,110 @@
+{
+  "app": {
+    "title": "PDF Voice RAG",
+    "logout": "Logout"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "register": "Register",
+    "error": "Authentication failed. Please check your credentials."
+  },
+  "nav": {
+    "documents": "Documents",
+    "folders": "Folders",
+    "recycleBin": "Recycle Bin",
+    "settings": "Settings"
+  },
+  "documents": {
+    "title": "My Documents",
+    "count": "{{count}} document(s)",
+    "status": {
+      "active": "active",
+      "excluded": "excluded",
+      "processing": "processing"
+    }
+  },
+  "upload": {
+    "title": "Upload PDF",
+    "drag": "Drag & drop a PDF here",
+    "or": "or",
+    "browse": "Browse files",
+    "maxSize": "Max 100 MB",
+    "error": {
+      "type": "Only PDF files are allowed.",
+      "size": "File must be under 100 MB.",
+      "upload": "Upload failed. Please try again."
+    },
+    "uploading": "Uploading...",
+    "success": "Upload successful"
+  },
+  "ocr": {
+    "title": "Scan Photo",
+    "drag": "Drag & drop a photo here",
+    "or": "or",
+    "browse": "Browse photos",
+    "maxSize": "Max 25 MB · JPEG or PNG",
+    "error": {
+      "type": "Only JPEG or PNG images are allowed.",
+      "size": "File must be under 25 MB.",
+      "upload": "OCR processing failed. Please try again."
+    },
+    "uploading": "Processing...",
+    "success": "OCR successful"
+  },
+  "voice": {
+    "hold": "Hold to Ask",
+    "release": "Release to Send",
+    "processing": "Processing...",
+    "error": "Voice processing failed."
+  },
+  "answer": {
+    "question": "Question",
+    "answer": "Answer",
+    "sources": "Sources",
+    "play": "Play answer",
+    "pause": "Pause"
+  },
+  "language": {
+    "title": "Language Settings",
+    "preferred": "Preferred Language",
+    "en": "English",
+    "de": "German",
+    "save": "Save",
+    "saved": "Saved!"
+  },
+  "folders": {
+    "title": "Folders",
+    "newFolder": "New folder",
+    "noFolders": "No folders yet. Create one to organize your documents.",
+    "share": "Share",
+    "delete": "Delete",
+    "rename": "Rename"
+  },
+  "share": {
+    "title": "Share \"{{name}}\"",
+    "emailPlaceholder": "Recipient email address",
+    "shareButton": "Share",
+    "cancel": "Cancel",
+    "error": {
+      "notFound": "User not found. Please check the email address.",
+      "generic": "Sharing failed. Please try again."
+    }
+  },
+  "recycleBin": {
+    "title": "Recycle Bin",
+    "empty": "Recycle bin is empty.",
+    "notice": "Items are automatically deleted after 30 days.",
+    "restore": "Restore",
+    "delete": "Delete permanently",
+    "type": {
+      "document": "Document",
+      "folder": "Folder"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection."
+  }
+}
