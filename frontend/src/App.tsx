@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Upload } from './components/Upload';
 import { VoiceInput } from './components/VoiceInput';
 import { Answer } from './components/Answer';
@@ -7,14 +8,28 @@ import { FolderTree } from './components/FolderTree';
 import { ShareFolder } from './components/ShareFolder';
 import { RecycleBin } from './components/RecycleBin';
 import { LanguageSettings } from './components/LanguageSettings';
-import { listDocuments, listFolders, createFolder, deleteFolder, listRecycleBin, login, register } from './services/api';
-import type { Document, Folder, VoiceQueryResult, RecycleBinItem, SupportedLanguage } from './types/types';
+import {
+  listDocuments,
+  listFolders,
+  createFolder,
+  deleteFolder,
+  listRecycleBin,
+  login,
+  register,
+} from './services/api';
+import type {
+  Document,
+  Folder,
+  VoiceQueryResult,
+  RecycleBinItem,
+  SupportedLanguage,
+} from './types/types';
 
 type Tab = 'documents' | 'folders' | 'recycle-bin' | 'settings';
 
 export default function App(): React.ReactElement {
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem('accessToken'),
+  const [accessToken, setAccessToken] = useState<string | null>(() =>
+    localStorage.getItem('accessToken'),
   );
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -31,11 +46,7 @@ export default function App(): React.ReactElement {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const loadData = async (): Promise<void> => {
-    const [docs, fols, bin] = await Promise.all([
-      listDocuments(),
-      listFolders(),
-      listRecycleBin(),
-    ]);
+    const [docs, fols, bin] = await Promise.all([listDocuments(), listFolders(), listRecycleBin()]);
     setDocuments(docs);
     setFolders(fols);
     setRecycleBinItems(bin);
@@ -56,8 +67,20 @@ export default function App(): React.ReactElement {
       localStorage.setItem('accessToken', res.accessToken);
       setAccessToken(res.accessToken);
       setLanguage(res.user.preferredLanguage);
-    } catch {
-      setAuthError('Authentication failed. Please check your credentials.');
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { message?: string | string[] } | undefined;
+        const msg = data?.message;
+        if (Array.isArray(msg)) {
+          setAuthError(msg.join(', '));
+        } else if (typeof msg === 'string') {
+          setAuthError(msg);
+        } else {
+          setAuthError('Authentication failed. Please check your credentials.');
+        }
+      } else {
+        setAuthError('Authentication failed. Please check your credentials.');
+      }
     }
   };
 
@@ -84,7 +107,9 @@ export default function App(): React.ReactElement {
             placeholder="Password"
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') void handleAuth('login'); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void handleAuth('login');
+            }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <button
@@ -151,10 +176,22 @@ export default function App(): React.ReactElement {
 
             <ul className="space-y-2">
               {documents.map((doc) => (
-                <li key={doc.id} className="bg-white rounded-lg p-3 shadow-sm flex items-center gap-3">
-                  <svg className="h-5 w-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                <li
+                  key={doc.id}
+                  className="bg-white rounded-lg p-3 shadow-sm flex items-center gap-3"
+                >
+                  <svg
+                    className="h-5 w-5 text-red-400 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-700 truncate">{doc.filename}</p>
@@ -162,9 +199,13 @@ export default function App(): React.ReactElement {
                       {doc.detectedLanguage.toUpperCase()} · {(doc.fileSize / 1024).toFixed(0)} KB
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    doc.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      doc.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
                     {doc.status}
                   </span>
                 </li>
@@ -181,9 +222,7 @@ export default function App(): React.ReactElement {
               />
             </div>
 
-            {voiceResult && (
-              <Answer result={voiceResult} />
-            )}
+            {voiceResult && <Answer result={voiceResult} />}
           </>
         )}
 
@@ -217,7 +256,10 @@ export default function App(): React.ReactElement {
               {documents
                 .filter((d) => d.folderId === selectedFolder?.id)
                 .map((doc) => (
-                  <div key={doc.id} className="bg-white rounded-lg p-3 shadow-sm text-sm text-gray-700">
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-lg p-3 shadow-sm text-sm text-gray-700"
+                  >
                     {doc.filename}
                   </div>
                 ))}

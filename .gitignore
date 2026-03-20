@@ -27,7 +27,8 @@ Thumbs.db
 *.swp
 
 # Editor
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
