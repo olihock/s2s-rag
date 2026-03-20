@@ -186,7 +186,7 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - Branches MUST be short-lived (≤5 days before merge or archive)
 
 ### Documentation Requirements
-- Every feature MUST have a spec in `.specify/specs/###-feature/`
+- Every feature MUST have a spec in `specs/###-feature/`
 - API endpoints MUST be documented in Swagger/OpenAPI
 - README MUST contain setup instructions, architecture diagram, and quickstart
 - Complex AI integrations MUST have dedicated documentation in `docs/ai-components/`
@@ -218,8 +218,6 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - **MAJOR**: Backward-incompatible principle removals or redefinitions
 - **MINOR**: New principle additions or material expansions of guidance
 - **PATCH**: Clarifications, wording improvements, typo fixes
-
-**Version**: 2.0.0 | **Ratified**: 2026-03-12 | **Last Amended**: 2026-03-12
 
 <!--
   SYNC IMPACT REPORT

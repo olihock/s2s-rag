@@ -1,0 +1,110 @@
+{
+  "app": {
+    "title": "PDF Voice RAG",
+    "logout": "Abmelden"
+  },
+  "auth": {
+    "email": "E-Mail",
+    "password": "Passwort",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "error": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten."
+  },
+  "nav": {
+    "documents": "Dokumente",
+    "folders": "Ordner",
+    "recycleBin": "Papierkorb",
+    "settings": "Einstellungen"
+  },
+  "documents": {
+    "title": "Meine Dokumente",
+    "count": "{{count}} Dokument(e)",
+    "status": {
+      "active": "aktiv",
+      "excluded": "ausgeschlossen",
+      "processing": "wird verarbeitet"
+    }
+  },
+  "upload": {
+    "title": "PDF hochladen",
+    "drag": "PDF hierher ziehen oder ablegen",
+    "or": "oder",
+    "browse": "Dateien durchsuchen",
+    "maxSize": "Max. 100 MB",
+    "error": {
+      "type": "Nur PDF-Dateien sind erlaubt.",
+      "size": "Datei muss unter 100 MB sein.",
+      "upload": "Upload fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "uploading": "Wird hochgeladen...",
+    "success": "Upload erfolgreich"
+  },
+  "ocr": {
+    "title": "Foto scannen",
+    "drag": "Foto hierher ziehen oder ablegen",
+    "or": "oder",
+    "browse": "Fotos durchsuchen",
+    "maxSize": "Max. 25 MB · JPEG oder PNG",
+    "error": {
+      "type": "Nur JPEG- oder PNG-Bilder sind erlaubt.",
+      "size": "Datei muss unter 25 MB sein.",
+      "upload": "OCR-Verarbeitung fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "uploading": "Wird verarbeitet...",
+    "success": "OCR erfolgreich"
+  },
+  "voice": {
+    "hold": "Halten zum Fragen",
+    "release": "Loslassen zum Senden",
+    "processing": "Wird verarbeitet...",
+    "error": "Sprachverarbeitung fehlgeschlagen."
+  },
+  "answer": {
+    "question": "Frage",
+    "answer": "Antwort",
+    "sources": "Quellen",
+    "play": "Antwort abspielen",
+    "pause": "Pause"
+  },
+  "language": {
+    "title": "Spracheinstellungen",
+    "preferred": "Bevorzugte Sprache",
+    "en": "Englisch",
+    "de": "Deutsch",
+    "save": "Speichern",
+    "saved": "Gespeichert!"
+  },
+  "folders": {
+    "title": "Ordner",
+    "newFolder": "Neuer Ordner",
+    "noFolders": "Noch keine Ordner. Erstellen Sie einen, um Ihre Dokumente zu organisieren.",
+    "share": "Teilen",
+    "delete": "Löschen",
+    "rename": "Umbenennen"
+  },
+  "share": {
+    "title": "\"{{name}}\" teilen",
+    "emailPlaceholder": "E-Mail-Adresse des Empfängers",
+    "shareButton": "Teilen",
+    "cancel": "Abbrechen",
+    "error": {
+      "notFound": "Benutzer nicht gefunden. Bitte überprüfen Sie die E-Mail-Adresse.",
+      "generic": "Freigabe fehlgeschlagen. Bitte erneut versuchen."
+    }
+  },
+  "recycleBin": {
+    "title": "Papierkorb",
+    "empty": "Papierkorb ist leer.",
+    "notice": "Elemente werden nach 30 Tagen automatisch gelöscht.",
+    "restore": "Wiederherstellen",
+    "delete": "Endgültig löschen",
+    "type": {
+      "document": "Dokument",
+      "folder": "Ordner"
+    }
+  },
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung."
+  }
+}

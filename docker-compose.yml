@@ -1,0 +1,235 @@
+services:
+  # ─────────────── Application Services ───────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: s2s-rag-backend
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-raguser}:${POSTGRES_PASSWORD:-ragpass}@postgres:5432/${POSTGRES_DB:-ragdb}?schema=public
+      - JWT_SECRET=${JWT_SECRET}
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - WHISPER_URL=http://faster-whisper:9000
+      - OLLAMA_URL=http://ollama:11434
+      - TTS_URL=http://piper:10200
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      faster-whisper:
+        condition: service_started
+      ollama:
+        condition: service_started
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: s2s-rag-frontend
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:80']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────── Database Services ───────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: s2s-rag-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raguser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpass}
+      POSTGRES_DB: ${POSTGRES_DB:-ragdb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-raguser} -d ${POSTGRES_DB:-ragdb}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────── Vector Database ───────────────
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: s2s-rag-etcd
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: '1000'
+      ETCD_QUOTA_BACKEND_BYTES: '4294967296'
+      ETCD_SNAPSHOT_COUNT: '50000'
+    command:
+      - etcd
+      - --advertise-client-urls=http://127.0.0.1:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --data-dir=/etcd
+    volumes:
+      - etcd_data:/etcd
+    networks:
+      - s2s-rag-net
+    healthcheck:
+      test: ['CMD', 'etcdctl', 'endpoint', 'health']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    image: minio/minio:RELEASE.2023-03-13T19-46-17Z
+    container_name: s2s-rag-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - '9001:9001'
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    networks:
+      - s2s-rag-net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  milvus:
+    image: milvusdb/milvus:v2.4.4
+    container_name: s2s-rag-milvus
+    command: milvus run standalone
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - '19530:19530'
+      - '9091:9091'
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9091/healthz']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ─────────────── AI Services ───────────────
+  faster-whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: s2s-rag-whisper
+    environment:
+      WHISPER__MODEL: base
+      WHISPER__LANGUAGE: null
+    ports:
+      - '9000:8000'
+    volumes:
+      - whisper_models:/root/.cache/huggingface
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: s2s-rag-ollama
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: s2s-rag-piper
+    command: --voice en_US-lessac-medium
+    ports:
+      - '10200:10200'
+    volumes:
+      - piper_voices:/data
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'echo ok']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pipecat:
+    build:
+      context: ./pipecat
+      dockerfile: Dockerfile
+    container_name: s2s-rag-pipecat
+    env_file: .env
+    environment:
+      - WHISPER_URL=http://faster-whisper:8000
+      - OLLAMA_URL=http://ollama:11434
+      - PIPER_URL=http://piper:10200
+    ports:
+      - '8765:8765'
+    networks:
+      - s2s-rag-net
+    restart: unless-stopped
+    depends_on:
+      - faster-whisper
+      - ollama
+      - piper
+
+volumes:
+  postgres_data:
+  milvus_data:
+  etcd_data:
+  minio_data:
+  uploads:
+  whisper_models:
+  ollama_models:
+  piper_voices:
+
+networks:
+  s2s-rag-net:
+    driver: bridge

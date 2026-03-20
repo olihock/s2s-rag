@@ -1,0 +1,46 @@
+{
+  "name": "s2s-rag",
+  "version": "0.1.0",
+  "description": "PDF Document Management with Voice-Based RAG Search",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start:backend": "yarn workspace backend start",
+    "start:backend:dev": "yarn workspace backend start:dev",
+    "start:frontend": "yarn workspace frontend dev",
+    "build": "yarn workspace backend build && yarn workspace frontend build",
+    "test": "yarn workspace backend test && yarn workspace frontend test",
+    "test:backend": "yarn workspace backend test",
+    "test:frontend": "yarn workspace frontend test",
+    "coverage": "yarn workspace backend test:cov && yarn workspace frontend coverage",
+    "lint": "yarn workspace backend lint && yarn workspace frontend lint",
+    "format": "prettier --write \"**/*.{ts,tsx,json,yaml,md}\" --ignore-path .prettierignore",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
