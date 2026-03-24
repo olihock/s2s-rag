@@ -8,6 +8,7 @@ import { FolderTree } from './components/FolderTree';
 import { ShareFolder } from './components/ShareFolder';
 import { RecycleBin } from './components/RecycleBin';
 import { LanguageSettings } from './components/LanguageSettings';
+import { ChatWindow } from './components/ChatWindow';
 import {
   listDocuments,
   listFolders,
@@ -23,6 +24,7 @@ import type {
   VoiceQueryResult,
   RecycleBinItem,
   SupportedLanguage,
+  ChatMessage,
 } from './types/types';
 
 type Tab = 'documents' | 'folders' | 'recycle-bin' | 'settings';
@@ -39,6 +41,8 @@ export default function App(): React.ReactElement {
   const [language, setLanguage] = useState<SupportedLanguage>('en');
   const [activeTab, setActiveTab] = useState<Tab>('documents');
   const [shareFolderId, setShareFolderId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -215,11 +219,27 @@ export default function App(): React.ReactElement {
             {/* Voice Q&A */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="font-semibold text-gray-700 mb-4">Ask a Question</h2>
-              <VoiceInput
-                documentIds={documents.map((d) => d.id)}
-                onResult={setVoiceResult}
-                language={language}
-              />
+              <div className="flex items-center gap-6 justify-center">
+                <VoiceInput
+                  documentIds={documents.map((d) => d.id)}
+                  onResult={setVoiceResult}
+                  language={language}
+                />
+                <button
+                  onClick={() => setChatOpen((o) => !o)}
+                  aria-label="Chat öffnen"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3z"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {voiceResult && <Answer result={voiceResult} />}
@@ -282,6 +302,16 @@ export default function App(): React.ReactElement {
           folderId={shareFolderId}
           folderName={shareFolderObj.name}
           onClose={() => setShareFolderId(null)}
+        />
+      )}
+
+      {/* Chat overlay */}
+      {chatOpen && (
+        <ChatWindow
+          language={language}
+          onClose={() => setChatOpen(false)}
+          messages={messages}
+          onMessagesChange={setMessages}
         />
       )}
     </div>

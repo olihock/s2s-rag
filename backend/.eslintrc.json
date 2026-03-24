@@ -6,6 +6,7 @@
     "sourceType": "module",
     "project": true
   },
+  "ignorePatterns": ["vitest.config.ts", "vitest.e2e.config.ts"],
   "plugins": ["@typescript-eslint", "prettier"],
   "extends": [
     "eslint:recommended",

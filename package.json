@@ -10,6 +10,8 @@
   "scripts": {
     "start:backend": "yarn workspace backend start",
     "start:backend:dev": "yarn workspace backend start:dev",
+    "start:backend:dev:local": "cross-env PORT=3001 yarn workspace backend start:dev",
+    "start:frontend:local": "cross-env BACKEND_PORT=3001 yarn workspace frontend dev",
     "start:frontend": "yarn workspace frontend dev",
     "build": "yarn workspace backend build && yarn workspace frontend build",
     "test": "yarn workspace backend test && yarn workspace frontend test",
@@ -18,11 +20,12 @@
     "coverage": "yarn workspace backend test:cov && yarn workspace frontend coverage",
     "lint": "yarn workspace backend lint && yarn workspace frontend lint",
     "format": "prettier --write \"**/*.{ts,tsx,json,yaml,md}\" --ignore-path .prettierignore",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

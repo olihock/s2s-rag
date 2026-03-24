@@ -33,7 +33,7 @@ export class FoldersService {
 
   async listByUser(ownerId: string): Promise<Folder[]> {
     const folders = await this.prisma.folder.findMany({ where: { ownerId } });
-    return folders.map((f) => this.mapFolder(f));
+    return folders.map((f: Parameters<typeof this.mapFolder>[0]) => this.mapFolder(f));
   }
 
   async findById(id: string, userId: string): Promise<Folder> {
@@ -57,11 +57,7 @@ export class FoldersService {
     await this.prisma.folder.delete({ where: { id } });
   }
 
-  async shareFolder(
-    folderId: string,
-    ownerId: string,
-    recipientEmail: string,
-  ): Promise<void> {
+  async shareFolder(folderId: string, ownerId: string, recipientEmail: string): Promise<void> {
     await this.findById(folderId, ownerId);
 
     const recipient = await this.prisma.user.findUnique({ where: { email: recipientEmail } });

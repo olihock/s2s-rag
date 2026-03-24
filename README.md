@@ -4,13 +4,13 @@
 
 ## Features
 
-| User Story | Feature | Priority |
-|-----------|---------|----------|
-| US1 | PDF upload + voice Q&A (STT → semantic search → LLM → TTS) | P1 |
-| US2 | OCR photo scanning (JPEG/PNG → Faster-Whisper → Milvus) | P2 |
-| US3 | Folder organisation (CRUD, nested, document assignment) | P3 |
-| US4 | Folder sharing (share by email, access-control guard, revoke) | P4 |
-| US5 | Document management (exclude/re-enable search, recycle bin, 30-day auto-cleanup) | P5 |
+| User Story | Feature                                                                          | Priority |
+| ---------- | -------------------------------------------------------------------------------- | -------- |
+| US1        | PDF upload + voice Q&A (STT → semantic search → LLM → TTS)                       | P1       |
+| US2        | OCR photo scanning (JPEG/PNG → Faster-Whisper → Milvus)                          | P2       |
+| US3        | Folder organisation (CRUD, nested, document assignment)                          | P3       |
+| US4        | Folder sharing (share by email, access-control guard, revoke)                    | P4       |
+| US5        | Document management (exclude/re-enable search, recycle bin, 30-day auto-cleanup) | P5       |
 
 ---
 
@@ -59,18 +59,18 @@ Audio blob → POST /api/documents/:id/query
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | NestJS 10, TypeScript, Passport/JWT |
-| Frontend | React 18, Vite 5, Tailwind CSS, i18next |
-| Relational DB | PostgreSQL 15, Prisma 5 |
-| Vector DB | Milvus 2.4, @zilliz/milvus2-sdk-node |
-| STT | Faster-Whisper (fedirz/faster-whisper-server) |
-| LLM | Ollama (llama3 + nomic-embed-text) |
-| TTS | Piper (rhasspy/wyoming-piper) |
-| Pipeline | Pipecat |
-| Testing | Vitest 1.6, Playwright |
-| Container | Docker Compose |
+| Layer         | Technology                                    |
+| ------------- | --------------------------------------------- |
+| Backend       | NestJS 10, TypeScript, Passport/JWT           |
+| Frontend      | React 18, Vite 5, Tailwind CSS, i18next       |
+| Relational DB | PostgreSQL 15, Prisma 5                       |
+| Vector DB     | Milvus 2.4, @zilliz/milvus2-sdk-node          |
+| STT           | Faster-Whisper (fedirz/faster-whisper-server) |
+| LLM           | Ollama (llama3 + nomic-embed-text)            |
+| TTS           | Piper (rhasspy/wyoming-piper)                 |
+| Pipeline      | Pipecat                                       |
+| Testing       | Vitest 1.6, Playwright                        |
+| Container     | Docker Compose                                |
 
 ---
 
@@ -117,11 +117,11 @@ docker compose exec backend npx prisma@5 migrate deploy
 
 ### 5. Open the app
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:5173 |
-| Backend API | http://localhost:3000/api |
-| Swagger docs | http://localhost:3000/api/docs |
+| Service      | URL                              |
+| ------------ | -------------------------------- |
+| Frontend     | http://localhost:5173            |
+| Backend API  | http://localhost:3000/api        |
+| Swagger docs | http://localhost:3000/api/docs   |
 | Health check | http://localhost:3000/api/health |
 
 ---
@@ -137,6 +137,11 @@ yarn install
 
 ### Backend
 
+> **Hinweis zu Port-Konflikten:** Das Docker-Backend läuft auf Port 3000. Wenn du das Backend lokal startest während Docker läuft, gibt es einen Konflikt. Zwei Optionen:
+>
+> - Docker-Backend stoppen: `docker stop s2s-rag-backend`, dann normal `yarn start:backend:dev`
+> - Lokalen Dev-Server auf Port 3001 starten: `yarn start:backend:dev:local` (und Frontend mit `yarn start:frontend:local` starten, damit der Vite-Proxy auf Port 3001 zeigt)
+
 ```bash
 cd backend
 
@@ -149,10 +154,11 @@ yarn test
 # Run E2E tests
 yarn test:e2e
 
-# Generate Prisma client
+# Generate Prisma client (only needed after schema.prisma changes)
 npx prisma generate
 
-# Run migrations (local Postgres running)
+# Create a new migration (only needed when changing schema.prisma;
+# existing migrations are applied automatically on docker compose up)
 npx prisma migrate dev
 ```
 
@@ -185,25 +191,25 @@ yarn format
 
 Full OpenAPI spec at `specs/001-pdf-voice-rag/contracts/api.openapi.yaml` or at runtime via Swagger UI.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/auth/register | Create account |
-| POST | /api/auth/login | Get JWT |
-| POST | /api/documents | Upload PDF |
-| GET | /api/documents | List my documents |
-| POST | /api/documents/ocr | Upload photo for OCR |
-| POST | /api/documents/:id/query | Voice Q&A |
-| PATCH | /api/documents/:id/exclude | Exclude from search |
-| PATCH | /api/documents/:id/re-enable | Re-enable in search |
-| GET | /api/folders | List folders |
-| POST | /api/folders | Create folder |
-| PATCH | /api/folders/:id | Rename folder |
-| DELETE | /api/folders/:id | Delete folder |
-| POST | /api/folders/:id/share | Share folder by email |
-| DELETE | /api/folders/:id/share | Revoke share |
-| GET | /api/recycle-bin | List recycle bin |
-| POST | /api/recycle-bin/:id/restore | Restore item |
-| DELETE | /api/recycle-bin/:id | Permanently delete |
+| Method | Path                         | Description           |
+| ------ | ---------------------------- | --------------------- |
+| POST   | /api/auth/register           | Create account        |
+| POST   | /api/auth/login              | Get JWT               |
+| POST   | /api/documents               | Upload PDF            |
+| GET    | /api/documents               | List my documents     |
+| POST   | /api/documents/ocr           | Upload photo for OCR  |
+| POST   | /api/documents/:id/query     | Voice Q&A             |
+| PATCH  | /api/documents/:id/exclude   | Exclude from search   |
+| PATCH  | /api/documents/:id/re-enable | Re-enable in search   |
+| GET    | /api/folders                 | List folders          |
+| POST   | /api/folders                 | Create folder         |
+| PATCH  | /api/folders/:id             | Rename folder         |
+| DELETE | /api/folders/:id             | Delete folder         |
+| POST   | /api/folders/:id/share       | Share folder by email |
+| DELETE | /api/folders/:id/share       | Revoke share          |
+| GET    | /api/recycle-bin             | List recycle bin      |
+| POST   | /api/recycle-bin/:id/restore | Restore item          |
+| DELETE | /api/recycle-bin/:id         | Permanently delete    |
 
 All endpoints (except auth) require `Authorization: Bearer <token>`.
 
@@ -213,15 +219,15 @@ All endpoints (except auth) require `Authorization: Bearer <token>`.
 
 See [`.env.example`](.env.example) for the full list. Key variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `JWT_SECRET` | – | **Required** – JWT signing secret |
-| `DATABASE_URL` | postgres://… | PostgreSQL connection string |
-| `MILVUS_ADDRESS` | milvus:19530 | Milvus gRPC address |
-| `WHISPER_URL` | http://faster-whisper:9000 | STT service URL |
-| `OLLAMA_URL` | http://ollama:11434 | LLM service URL |
-| `PIPER_URL` | http://piper:10200 | TTS service URL |
-| `CORS_ORIGIN` | http://localhost:5173 | Allowed frontend origin |
+| Variable         | Default                    | Description                       |
+| ---------------- | -------------------------- | --------------------------------- |
+| `JWT_SECRET`     | –                          | **Required** – JWT signing secret |
+| `DATABASE_URL`   | postgres://…               | PostgreSQL connection string      |
+| `MILVUS_ADDRESS` | milvus:19530               | Milvus gRPC address               |
+| `WHISPER_URL`    | http://faster-whisper:9000 | STT service URL                   |
+| `OLLAMA_URL`     | http://ollama:11434        | LLM service URL                   |
+| `PIPER_URL`      | http://piper:10200         | TTS service URL                   |
+| `CORS_ORIGIN`    | http://localhost:5173      | Allowed frontend origin           |
 
 ---
 

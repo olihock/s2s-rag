@@ -134,3 +134,14 @@ export interface UploadDocumentDto {
 }
 
 export type AllowedMimeType = 'application/pdf' | 'image/jpeg' | 'image/png';
+
+// ─────────────── Chat Q&A types ───────────────
+export interface ChatQueryResult {
+  answer: string;
+  sources: Array<{
+    documentId: string;
+    filename: string;
+    chunkText: string;
+    similarity: number;
+  }>;
+}

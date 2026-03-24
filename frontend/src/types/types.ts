@@ -83,3 +83,26 @@ export interface RecycleBinItem {
   deletedAt: Date;
   originalLocation: string;
 }
+
+export interface ChatMessage {
+  id: string; // crypto.randomUUID()
+  role: 'user' | 'bot';
+  text: string;
+  sources?: Array<{
+    documentId: string;
+    filename: string;
+    chunkText: string;
+    similarity: number;
+  }>;
+  timestamp: Date;
+}
+
+export interface ChatQueryResult {
+  answer: string;
+  sources: Array<{
+    documentId: string;
+    filename: string;
+    chunkText: string;
+    similarity: number;
+  }>;
+}

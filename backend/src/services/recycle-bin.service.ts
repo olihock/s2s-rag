@@ -1,11 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../db/prisma.service';
 import { RecycleBinItem, RecycleBinItemType } from '../types';
+import { RecycleBin } from '@prisma/client';
 
 const RETENTION_DAYS = 30;
 
@@ -82,7 +78,7 @@ export class RecycleBinService {
 
   async listItems(userId: string): Promise<RecycleBinItem[]> {
     const items = await this.prisma.recycleBin.findMany({ where: { userId } });
-    return items.map((i) => ({
+    return items.map((i: RecycleBin) => ({
       id: i.id,
       userId: i.userId,
       itemType: i.itemType.toLowerCase() as RecycleBinItemType,

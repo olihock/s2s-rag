@@ -8,6 +8,7 @@ import { VoiceController } from './controllers/voice.controller';
 import { OcrController } from './controllers/ocr.controller';
 import { FoldersController } from './controllers/folders.controller';
 import { RecycleBinController } from './controllers/recycle-bin.controller';
+import { ChatController } from './controllers/chat.controller';
 import { DocumentsService } from './services/documents.service';
 import { SttService } from './services/stt.service';
 import { LlmService } from './services/llm.service';
@@ -21,18 +22,14 @@ import { SharedFolderGuard } from './guards/shared-folder.guard';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    VectorModule,
-    AuthModule,
-  ],
+  imports: [ScheduleModule.forRoot(), DatabaseModule, VectorModule, AuthModule],
   controllers: [
     DocumentsController,
     VoiceController,
     OcrController,
     FoldersController,
     RecycleBinController,
+    ChatController,
   ],
   providers: [
     DocumentsService,

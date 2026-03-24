@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../db/prisma.service';
 import { VectorService } from '../vector/vector.service';
+import { LlmService } from './llm.service';
 import { Document, SupportedLanguage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import * as pdfParse from 'pdf-parse';
@@ -29,6 +30,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly vectorService: VectorService,
+    private readonly llmService: LlmService,
   ) {}
 
   async uploadPdf(
@@ -78,7 +80,7 @@ export class DocumentsService {
 
   async listDocuments(ownerId: string): Promise<Document[]> {
     const docs = await this.prisma.document.findMany({ where: { ownerId } });
-    return docs.map((d) => this.mapDocument(d));
+    return docs.map((d: Parameters<typeof this.mapDocument>[0]) => this.mapDocument(d));
   }
 
   async findById(id: string, userId: string): Promise<Document> {
@@ -112,7 +114,23 @@ export class DocumentsService {
 
   detectLanguage(text: string): SupportedLanguage {
     // Heuristic: count common German words
-    const germanWords = ['der', 'die', 'das', 'und', 'von', 'mit', 'ist', 'ein', 'eine', 'auf', 'für', 'nicht', 'Sie', 'ich', 'wir'];
+    const germanWords = [
+      'der',
+      'die',
+      'das',
+      'und',
+      'von',
+      'mit',
+      'ist',
+      'ein',
+      'eine',
+      'auf',
+      'für',
+      'nicht',
+      'Sie',
+      'ich',
+      'wir',
+    ];
     const words = text.toLowerCase().split(/\s+/);
     const germanCount = words.filter((w) => germanWords.includes(w)).length;
     const ratio = germanCount / Math.max(words.length, 1);
@@ -128,16 +146,18 @@ export class DocumentsService {
     const chunks = this.chunkText(text);
     if (chunks.length === 0) return;
 
-    // Use simple embedding placeholder — production would call an embedding model
-    const chunkData = chunks.map((chunk, i) => ({
-      id: uuidv4(),
-      documentId,
-      ownerId,
-      chunkText: chunk,
-      language,
-      chunkIndex: i,
-      embedding: this.dummyEmbedding(chunk),
-    }));
+    // Use real embedding model for semantic search
+    const chunkData = await Promise.all(
+      chunks.map(async (chunk, i) => ({
+        id: uuidv4(),
+        documentId,
+        ownerId,
+        chunkText: chunk,
+        language,
+        chunkIndex: i,
+        embedding: await this.llmService.generateEmbedding(chunk),
+      })),
+    );
 
     await this.vectorService.insertChunks(chunkData);
   }
@@ -151,15 +171,6 @@ export class DocumentsService {
       start += CHUNK_SIZE - CHUNK_OVERLAP;
     }
     return chunks.filter((c) => c.trim().length > 0);
-  }
-
-  /**
-   * Placeholder dummy embedding (768-dim zeros).
-   * In production, call an embedding model (e.g. Ollama nomic-embed-text).
-   */
-  private dummyEmbedding(text: string): number[] {
-    const hash = Array.from(text).reduce((acc, c) => acc ^ c.charCodeAt(0), 0);
-    return Array.from({ length: 768 }, (_, i) => Math.sin((hash + i) * 0.01));
   }
 
   private mapDocument(doc: {

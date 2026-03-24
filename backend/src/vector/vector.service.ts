@@ -16,8 +16,12 @@ export class VectorService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.ensureCollection();
-    this.logger.log('Milvus connection established and collection ready');
+    try {
+      await this.ensureCollection();
+      this.logger.log('Milvus connection established and collection ready');
+    } catch (err) {
+      this.logger.warn(`Milvus unavailable — vector search disabled. ${(err as Error).message}`);
+    }
   }
 
   async healthCheck(): Promise<boolean> {
@@ -141,10 +145,13 @@ export class VectorService implements OnModuleInit {
       metric_type: MetricType.COSINE,
     });
 
-    return (results.results[0] ?? []).map((r) => ({
-      id: r.id as string,
-      documentId: r.document_id as string,
-      chunkText: r.chunk_text as string,
+    type Hit = { id: string; document_id: string; chunk_text: string; score: number };
+    const raw = results.results ?? [];
+    const hits: Hit[] = Array.isArray(raw[0]) ? (raw[0] as Hit[]) : (raw as unknown as Hit[]);
+    return hits.map((r) => ({
+      id: r.id,
+      documentId: r.document_id,
+      chunkText: r.chunk_text,
       similarity: r.score,
     }));
   }

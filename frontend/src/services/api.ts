@@ -1,5 +1,13 @@
 import axios from 'axios';
-import type { Document, Folder, LoginResponse, RecycleBinItem, VoiceQueryResult, SupportedLanguage } from '../types/types';
+import type {
+  Document,
+  Folder,
+  LoginResponse,
+  RecycleBinItem,
+  VoiceQueryResult,
+  SupportedLanguage,
+  ChatQueryResult,
+} from '../types/types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -26,7 +34,11 @@ export async function register(
   password: string,
   preferredLanguage?: SupportedLanguage,
 ): Promise<LoginResponse> {
-  const res = await api.post<LoginResponse>('/auth/register', { email, password, preferredLanguage });
+  const res = await api.post<LoginResponse>('/auth/register', {
+    email,
+    password,
+    preferredLanguage,
+  });
   return res.data;
 }
 
@@ -119,6 +131,15 @@ export async function restoreRecycleBinItem(id: string): Promise<void> {
 
 export async function permanentDeleteRecycleBinItem(id: string): Promise<void> {
   await api.delete(`/recycle-bin/${id}`);
+}
+
+// ──────────────── Chat Q&A ────────────────
+export async function queryWithChat(
+  message: string,
+  language?: SupportedLanguage,
+): Promise<ChatQueryResult> {
+  const res = await api.post<ChatQueryResult>('/chat/query', { message, language });
+  return res.data;
 }
 
 // ──────────────── Language ────────────────

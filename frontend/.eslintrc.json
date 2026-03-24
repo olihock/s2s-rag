@@ -6,12 +6,9 @@
     "sourceType": "module",
     "project": true
   },
+  "ignorePatterns": ["vite.config.ts", "postcss.config.js"],
   "plugins": ["@typescript-eslint", "prettier"],
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   "rules": {
     "prettier/prettier": "error",
     "@typescript-eslint/no-explicit-any": "error",

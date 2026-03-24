@@ -17,6 +17,10 @@ const mockVectorService = {
   deleteByDocumentId: vi.fn(),
 };
 
+const mockLlmService = {
+  generateEmbedding: vi.fn(),
+};
+
 describe('DocumentsService (US1)', () => {
   let service: DocumentsService;
 
@@ -25,6 +29,7 @@ describe('DocumentsService (US1)', () => {
     service = new DocumentsService(
       mockPrisma as never,
       mockVectorService as never,
+      mockLlmService as never,
     );
   });
 
@@ -37,9 +42,9 @@ describe('DocumentsService (US1)', () => {
         buffer: Buffer.from(''),
       };
 
-      await expect(
-        service.uploadPdf(largeFile as never, 'user-id', undefined),
-      ).rejects.toThrow('File size exceeds 100MB limit');
+      await expect(service.uploadPdf(largeFile as never, 'user-id', undefined)).rejects.toThrow(
+        'File size exceeds 100MB limit',
+      );
     });
 
     it('should reject non-PDF files', async () => {
@@ -50,9 +55,9 @@ describe('DocumentsService (US1)', () => {
         buffer: Buffer.from(''),
       };
 
-      await expect(
-        service.uploadPdf(invalidFile as never, 'user-id', undefined),
-      ).rejects.toThrow('Only PDF files are allowed');
+      await expect(service.uploadPdf(invalidFile as never, 'user-id', undefined)).rejects.toThrow(
+        'Only PDF files are allowed',
+      );
     });
 
     it('should create a document and index it in Milvus', async () => {
@@ -84,8 +89,9 @@ describe('DocumentsService (US1)', () => {
       expect(mockPrisma.document.create).toHaveBeenCalledOnce();
     });
 
-    it('should auto-detect German language in PDF content', async () => {
-      const germanContent = 'Guten Tag, dies ist ein deutsches Dokument über Technologie und Wissenschaft.';
+    it('should auto-detect German language in PDF content', () => {
+      const germanContent =
+        'Guten Tag, dies ist ein deutsches Dokument über Technologie und Wissenschaft.';
       const detectSpy = vi.spyOn(service as never, 'detectLanguage' as never);
       detectSpy.mockReturnValue('de');
 
@@ -122,9 +128,7 @@ describe('DocumentsService (US1)', () => {
         status: 'active',
       });
 
-      await expect(service.excludeFromSearch('doc-1', 'user-1')).rejects.toThrow(
-        'Forbidden',
-      );
+      await expect(service.excludeFromSearch('doc-1', 'user-1')).rejects.toThrow('Forbidden');
     });
   });
 });
