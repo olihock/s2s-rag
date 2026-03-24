@@ -43,6 +43,9 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
+# Test build artifacts
+backend/dist_test/
+
 # Docker
 .docker/
 

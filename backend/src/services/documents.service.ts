@@ -10,7 +10,7 @@ import { VectorService } from '../vector/vector.service';
 import { LlmService } from './llm.service';
 import { Document, SupportedLanguage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import * as pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse';
 
 const MAX_PDF_SIZE = 100 * 1024 * 1024; // 100 MB
 const CHUNK_SIZE = 500; // characters

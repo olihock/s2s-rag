@@ -1,5 +1,4 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import FormData from 'form-data';
 
 export interface TranscriptionResult {
   text: string;
@@ -17,16 +16,16 @@ export class SttService {
 
   async transcribe(audioBuffer: Buffer, mimeType: string): Promise<TranscriptionResult> {
     const form = new FormData();
-    form.append('file', audioBuffer, {
-      filename: 'audio.wav',
-      contentType: mimeType,
-    });
+    const arrayBuffer = audioBuffer.buffer.slice(
+      audioBuffer.byteOffset,
+      audioBuffer.byteOffset + audioBuffer.byteLength,
+    ) as ArrayBuffer;
+    form.append('file', new Blob([arrayBuffer], { type: mimeType }), 'audio.wav');
     form.append('response_format', 'json');
 
     const response = await fetch(`${this.whisperUrl}/v1/audio/transcriptions`, {
       method: 'POST',
-      body: form as unknown as BodyInit,
-      headers: form.getHeaders(),
+      body: form,
     });
 
     if (!response.ok) {

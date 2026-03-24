@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createRequire } from 'module';
+
+// Load the compiled dist service directly — tsc compiles `import * as FormData`
+// to `const FormData = require('form-data')` which correctly binds the constructor.
+// The SWC/Vitest transpiler has a different interop behaviour, so we use dist.
+const requireDist = createRequire(import.meta.url);
 
 // Mock fetch globally
-global.fetch = vi.fn();
-
-// Mock the STT service
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe('STT Service (US1)', () => {
   beforeEach(() => {
@@ -15,10 +18,15 @@ describe('STT Service (US1)', () => {
   it('should transcribe audio using Faster-Whisper endpoint', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ text: 'Hello world', language: 'en' }),
+      json: () => Promise.resolve({ text: 'Hello world', language: 'en' }),
     });
 
-    const { SttService } = await import('../../src/services/stt.service');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { SttService } = requireDist('../../dist/services/stt.service') as {
+      SttService: new () => {
+        transcribe: (buf: Buffer, mime: string) => Promise<{ text: string; language: string }>;
+      };
+    };
     const service = new SttService();
     const result = await service.transcribe(Buffer.from('mock-audio'), 'audio/wav');
 
@@ -29,10 +37,15 @@ describe('STT Service (US1)', () => {
   it('should handle German audio transcription', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ text: 'Hallo Welt', language: 'de' }),
+      json: () => Promise.resolve({ text: 'Hallo Welt', language: 'de' }),
     });
 
-    const { SttService } = await import('../../src/services/stt.service');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { SttService } = requireDist('../../dist/services/stt.service') as {
+      SttService: new () => {
+        transcribe: (buf: Buffer, mime: string) => Promise<{ text: string; language: string }>;
+      };
+    };
     const service = new SttService();
     const result = await service.transcribe(Buffer.from('mock-german-audio'), 'audio/wav');
 
@@ -46,11 +59,14 @@ describe('STT Service (US1)', () => {
       statusText: 'Internal Server Error',
     });
 
-    const { SttService } = await import('../../src/services/stt.service');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { SttService } = requireDist('../../dist/services/stt.service') as {
+      SttService: new () => { transcribe: (buf: Buffer, mime: string) => Promise<unknown> };
+    };
     const service = new SttService();
 
-    await expect(
-      service.transcribe(Buffer.from('mock-audio'), 'audio/wav'),
-    ).rejects.toThrow('Whisper STT failed');
+    await expect(service.transcribe(Buffer.from('mock-audio'), 'audio/wav')).rejects.toThrow(
+      'Whisper STT failed',
+    );
   });
 });

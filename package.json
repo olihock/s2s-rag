@@ -10,7 +10,7 @@
   "scripts": {
     "start:backend": "yarn workspace backend start",
     "start:backend:dev": "yarn workspace backend start:dev",
-    "start:backend:dev:local": "cross-env PORT=3001 yarn workspace backend start:dev",
+    "start:backend:dev:local": "rimraf backend/dist && cross-env PORT=3001 yarn workspace backend start:dev",
     "start:frontend:local": "cross-env BACKEND_PORT=3001 yarn workspace frontend dev",
     "start:frontend": "yarn workspace frontend dev",
     "build": "yarn workspace backend build && yarn workspace frontend build",
