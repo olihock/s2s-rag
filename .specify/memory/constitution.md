@@ -1,16 +1,47 @@
 <!--
   SYNC IMPACT REPORT
   ===================
+  Version Change: 2.2.0 → 2.3.0
+  Amendment Date: 2026-03-26
+  Amendment Type: MINOR (Mandatory PDF library: pdfjs-dist)
+
+  Changes:
+  - Added pdfjs-dist (PDF.js) as the required PDF text extraction library in Backend stack
+  - pdf-parse MUST NOT be used for PDF text extraction
+  - pdfjs-dist handles complex font encoding and is already in use in the codebase
+
+  Rationale:
+  - pdfjs-dist (Mozilla PDF.js) correctly handles complex font encodings and Type3 fonts
+    that pdf-parse fails on, preventing silent data loss during text extraction
+  - pdfjs-dist is the production-ready, actively maintained successor for Node.js PDF parsing
+  - The codebase already uses pdfjs-dist; this aligns the constitution with actual practice
+
+  Modified Principles: None
+  Added: pdfjs-dist entry in Technology Stack Requirements → Backend
+  Removed: None (pdf-parse was not previously mandated in the constitution)
+
+  Templates Status:
+  ✅ plan-template.md - No changes required
+  ✅ spec-template.md - No changes required
+  ✅ tasks-template.md - No changes required
+
+  Follow-up TODOs:
+  - Remove any residual pdf-parse dependency from package.json/yarn.lock if still present
+-->
+
+<!--
+  SYNC IMPACT REPORT
+  ===================
   Version Change: 1.0.1 → 2.0.0
   Amendment Date: 2026-03-12
   Amendment Type: MAJOR (Breaking data layer change)
-  
+
   Changes:
   - Milvus vector database is primary for vector search; PostgreSQL is permitted for relational data
   - Zilliz SDK for Milvus access; Prisma ORM for PostgreSQL (if used)
   - Updated Container-Based Deployment principle (V) for Milvus/PostgreSQL
   - Updated Technology Stack Requirements for vector-first architecture, relational data, and Tailwind CSS for UI
-  
+
   Rationale:
   - Milvus is purpose-built for vector similarity search (core RAG requirement)
   - PostgreSQL is a proven, robust relational database for metadata, user management, and transactional data
@@ -21,17 +52,17 @@
   - Tailwind CSS enables rapid, consistent, and modern UI development with utility-first design
   - Better horizontal scaling for vector workloads (Milvus)
   - Optimized for retrieval-augmented generation use cases
-  
+
   Breaking Changes:
   - Milvus is required for vector search; PostgreSQL is permitted for relational data
   - Data modeling: use collections/vectors for embeddings, tables/relations for metadata
   - Milvus uses query DSL via Zilliz SDK; PostgreSQL uses SQL via Prisma ORM
-  
+
   Templates Status:
   ✅ plan-template.md - No changes required (principles remain compatible)
   ✅ spec-template.md - No changes required
   ✅ tasks-template.md - No changes required
-  
+
   Follow-up TODOs:
   - Document vector schema design patterns for S2S-RAG use cases
   - Define embedding dimension standards (e.g., 768 for sentence-transformers)
@@ -125,15 +156,19 @@ Speech-to-Speech RAG (Retrieval Augmented Generation) system with local AI proce
 This section codifies the mandatory technology choices for the S2S-RAG project.
 
 ### Backend
+
 - **Language**: TypeScript (ES2022+)
 - **Framework**: NestJS (with dependency injection, decorators, and modular architecture)
 - **Runtime**: Node.js 20+ LTS
 - **Vector Database**: Milvus 2.3+ with Zilliz SDK (@zilliz/milvus2-sdk-node)
 - **Relational Database**: PostgreSQL 15+ (optional, for metadata/transactions) with Prisma ORM
 - **API Documentation**: Swagger/OpenAPI 3.0
+- **PDF Text Extraction**: pdfjs-dist (PDF.js) — MUST be used for all PDF content parsing;
+  pdf-parse MUST NOT be used
 - **Validation**: class-validator and class-transformer
 
 ### Frontend
+
 - **Language**: TypeScript (ES2022+)
 - **Framework**: React 18+
 - **Build Tool**: Vite 5+
@@ -142,18 +177,21 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - **UI Components**: Tailwind CSS (mandatory for all UI design)
 
 ### Testing
+
 - **Test Framework**: Vitest (for both unit and integration tests)
 - **Coverage Requirement**: ≥80% for services, models, and API endpoints
 - **E2E Testing**: Playwright (optional, for critical user journeys)
 - **Mocking**: Vitest built-in mocks for dependencies
 
 ### AI Components
+
 - **STT**: Faster-Whisper (Python-based, exposed via API or gRPC)
 - **LLM**: Ollama with Llama 3 model (API compatible with OpenAI format)
 - **TTS**: Piper or Kokoro (Python-based, exposed via API)
 - **Stream Control**: Pipecat framework for audio pipeline orchestration
 
 ### Infrastructure
+
 - **Containerization**: Docker 24+ with multi-stage builds
 - **Orchestration**: Docker Compose (for local dev and production)
 - **Vector Database**: Milvus 2.3+ container (milvusdb/milvus) with persistent volume mounts for vector data and metadata
@@ -161,6 +199,7 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - **Environment Management**: .env files with dotenv library (never commit secrets)
 
 ### Code Quality
+
 - **Linting**: ESLint with TypeScript-specific rules
 - **Formatting**: Prettier with consistent configuration
 - **Pre-commit Hooks**: Husky + lint-staged for automated checks
@@ -169,6 +208,7 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 ## Development Workflow
 
 ### Code Review Requirements
+
 - All code MUST be peer-reviewed before merging to main
 - PRs MUST pass all automated tests (unit, integration, linting)
 - PRs MUST include updated tests for new functionality
@@ -176,16 +216,19 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - Breaking changes MUST increment major version and document migration path
 
 ### Quality Gates
+
 - **Pre-merge**: All tests pass, coverage ≥80%, no linting errors, no TypeScript errors
 - **Pre-deployment**: Integration tests pass, Docker Compose health checks pass, manual smoke test complete
 - **Post-deployment**: Monitor logs for errors, verify latency metrics, confirm AI components responsive
 
 ### Branch Strategy
+
 - **main**: Production-ready code only
 - **feature branches**: Named per SpecKit convention `###-feature-name`
 - Branches MUST be short-lived (≤5 days before merge or archive)
 
 ### Documentation Requirements
+
 - Every feature MUST have a spec in `specs/###-feature/`
 - API endpoints MUST be documented in Swagger/OpenAPI
 - README MUST contain setup instructions, architecture diagram, and quickstart
@@ -194,11 +237,13 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 ## Governance
 
 ### Constitution Authority
+
 - This constitution supersedes all other project practices and conventions
 - All feature development, code reviews, and architectural decisions MUST comply with these principles
 - Violations MUST be documented and justified in the Complexity Tracking section of plan.md
 
 ### Amendment Procedure
+
 - Constitution changes MUST be proposed via the `/speckit.constitution` command
 - Amendments MUST include:
   - Rationale for the change
@@ -208,6 +253,7 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - Major changes (new/removed principles) MUST be reviewed by project leads
 
 ### Compliance Review
+
 - Constitution compliance MUST be checked during:
   - Feature planning phase (Constitution Check in plan.md)
   - Code review (reviewers verify adherence to principles)
@@ -215,6 +261,7 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
 - Repeated violations indicate need for constitution amendment or additional guidance
 
 ### Version Policy
+
 - **MAJOR**: Backward-incompatible principle removals or redefinitions
 - **MINOR**: New principle additions or material expansions of guidance
 - **PATCH**: Clarifications, wording improvements, typo fixes
@@ -225,17 +272,17 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
   Version Change: 2.0.0 → 2.1.0
   Amendment Date: 2026-03-12
   Amendment Type: MINOR (New backend option: PostgreSQL)
-  
+
   Changes:
   - PostgreSQL 15+ (with Prisma ORM) is now permitted for relational/transactional data
   - Milvus remains required for vector search
   - Updated rationale, stack, and infra sections
-  
+
   Templates Status:
   ✅ plan-template.md - No changes required
   ✅ spec-template.md - No changes required
   ✅ tasks-template.md - No changes required
-  
+
   Follow-up TODOs:
   - Document PostgreSQL schema patterns for metadata/transactions
 -->
@@ -248,18 +295,18 @@ This section codifies the mandatory technology choices for the S2S-RAG project.
   Version Change: 2.1.0 → 2.2.0
   Amendment Date: 2026-03-12
   Amendment Type: MINOR (Mandatory UI: Tailwind CSS)
-  
+
   Changes:
   - Tailwind CSS is now required for all frontend UI design
   - Updated rationale and stack sections
-  
+
   Templates Status:
   ✅ plan-template.md - No changes required
   ✅ spec-template.md - No changes required
   ✅ tasks-template.md - No changes required
-  
+
   Follow-up TODOs:
   - Ensure all UI code and examples use Tailwind CSS
 -->
 
-**Version**: 2.2.0 | **Ratified**: 2026-03-12 | **Last Amended**: 2026-03-12
+**Version**: 2.3.0 | **Ratified**: 2026-03-12 | **Last Amended**: 2026-03-26
