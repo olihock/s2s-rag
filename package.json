@@ -8,11 +8,8 @@
     "frontend"
   ],
   "scripts": {
-    "start:backend": "yarn workspace backend start",
-    "start:backend:dev": "yarn workspace backend start:dev",
-    "start:backend:dev:local": "rimraf backend/dist && cross-env PORT=3001 yarn workspace backend start:dev",
-    "start:frontend:local": "cross-env BACKEND_PORT=3001 yarn workspace frontend dev",
-    "start:frontend": "yarn workspace frontend dev",
+    "start:backend": "rimraf backend/dist && cross-env PORT=3001 yarn workspace backend start:dev",
+    "start:frontend": "cross-env BACKEND_PORT=3001 yarn workspace frontend dev",
     "build": "yarn workspace backend build && yarn workspace frontend build",
     "test": "yarn workspace backend test && yarn workspace frontend test",
     "test:backend": "yarn workspace backend test",

@@ -10,7 +10,7 @@ import { VectorService } from '../vector/vector.service';
 import { LlmService } from './llm.service';
 import { Document, SupportedLanguage } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import pdfParse from 'pdf-parse';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const MAX_PDF_SIZE = 100 * 1024 * 1024; // 100 MB
 const CHUNK_SIZE = 500; // characters
@@ -46,12 +46,29 @@ export class DocumentsService {
     }
 
     let contentText = '';
+    let extractionFailed = false;
     try {
-      const parsed = await pdfParse(file.buffer);
-      contentText = parsed.text ?? '';
-    } catch {
-      this.logger.warn(`Failed to parse PDF: ${file.originalname}`);
+      const rawText = await this.extractPdfText(file.buffer);
+
+      if (this.isGarbledText(rawText)) {
+        const ratio = this.cjkRatio(rawText);
+        this.logger.warn(
+          `PDF "${file.originalname}" has garbled text after extraction ` +
+            `(${(ratio * 100).toFixed(1)}% CJK characters — font encoding mismatch). ` +
+            `Document will be stored but NOT indexed. Re-upload via OCR to enable search.`,
+        );
+        extractionFailed = true;
+        contentText = rawText;
+      } else {
+        contentText = rawText;
+        this.logger.log(
+          `PDF "${file.originalname}" parsed: ${contentText.length} characters extracted`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to parse PDF "${file.originalname}": ${(err as Error).message}`);
       contentText = '';
+      extractionFailed = true;
     }
 
     const detectedLanguage = this.detectLanguage(contentText);
@@ -64,16 +81,18 @@ export class DocumentsService {
         fileSize: file.size,
         contentText,
         detectedLanguage,
-        searchable: true,
-        status: 'active',
-        metadata: {},
+        searchable: !extractionFailed,
+        status: extractionFailed ? 'excluded' : 'active',
+        metadata: extractionFailed ? { extractionError: 'garbled_text' } : {},
       },
     });
 
-    // Index in Milvus asynchronously
-    this.indexDocument(doc.id, ownerId, contentText, detectedLanguage).catch((err: unknown) =>
-      this.logger.error(`Failed to index document ${doc.id}`, err),
-    );
+    // Index in Milvus asynchronously — only if text extraction succeeded
+    if (!extractionFailed) {
+      this.indexDocument(doc.id, ownerId, contentText, detectedLanguage).catch((err: unknown) =>
+        this.logger.error(`Failed to index document ${doc.id}`, err),
+      );
+    }
 
     return this.mapDocument(doc);
   }
@@ -162,6 +181,23 @@ export class DocumentsService {
     await this.vectorService.insertChunks(chunkData);
   }
 
+  /** Extract plain text from a PDF buffer using PDF.js (handles complex font encoding). */
+  private async extractPdfText(buffer: Buffer): Promise<string> {
+    const data = new Uint8Array(buffer);
+    const loadingTask = pdfjsLib.getDocument({ data, useSystemFonts: true });
+    const pdfDocument = await loadingTask.promise;
+
+    const pageTexts: string[] = [];
+    for (let i = 1; i <= pdfDocument.numPages; i++) {
+      const page = await pdfDocument.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+      pageTexts.push(pageText);
+    }
+
+    return pageTexts.join('\n');
+  }
+
   private chunkText(text: string): string[] {
     const chunks: string[] = [];
     let start = 0;
@@ -171,6 +207,20 @@ export class DocumentsService {
       start += CHUNK_SIZE - CHUNK_OVERLAP;
     }
     return chunks.filter((c) => c.trim().length > 0);
+  }
+
+  /** Returns the fraction of non-whitespace characters that are CJK (Korean, Chinese, Japanese). */
+  cjkRatio(text: string): number {
+    const nonWs = text.replace(/\s/g, '');
+    if (nonWs.length === 0) return 0;
+    // Hangul syllables, Hangul Jamo, CJK Unified Ideographs, CJK Extension A
+    const cjk = nonWs.match(/[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7A3\u4E00-\u9FFF\u3400-\u4DBF]/g);
+    return (cjk?.length ?? 0) / nonWs.length;
+  }
+
+  /** Returns true when the extracted text looks like an encoding artefact (>10% CJK). */
+  private isGarbledText(text: string): boolean {
+    return this.cjkRatio(text) > 0.1;
   }
 
   private mapDocument(doc: {

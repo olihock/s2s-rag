@@ -36,7 +36,9 @@ export class VectorService implements OnModuleInit {
   private async ensureCollection(): Promise<void> {
     const exists = await this.client.hasCollection({ collection_name: DOCUMENTS_COLLECTION });
     if (exists.value) {
-      this.logger.log(`Collection "${DOCUMENTS_COLLECTION}" already exists`);
+      this.logger.log(`Collection "${DOCUMENTS_COLLECTION}" already exists — loading into memory`);
+      await this.client.loadCollection({ collection_name: DOCUMENTS_COLLECTION });
+      this.logger.log(`Collection "${DOCUMENTS_COLLECTION}" loaded`);
       return;
     }
 

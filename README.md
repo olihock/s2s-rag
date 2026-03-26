@@ -137,11 +137,6 @@ yarn install
 
 ### Backend
 
-> **Hinweis zu Port-Konflikten:** Das Docker-Backend läuft auf Port 3000. Wenn du das Backend lokal startest während Docker läuft, gibt es einen Konflikt. Zwei Optionen:
->
-> - Docker-Backend stoppen: `docker stop s2s-rag-backend`, dann normal `yarn start:backend:dev`
-> - Lokalen Dev-Server auf Port 3001 starten: `yarn start:backend:dev:local` (und Frontend mit `yarn start:frontend:local` starten, damit der Vite-Proxy auf Port 3001 zeigt)
-
 ```bash
 cd backend
 

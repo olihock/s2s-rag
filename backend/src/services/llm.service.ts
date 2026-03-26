@@ -17,14 +17,10 @@ export class LlmService {
     contextChunks: string[],
     language: SupportedLanguage,
   ): Promise<string> {
-    const contextText = contextChunks
-      .map((chunk, i) => `[${i + 1}] ${chunk}`)
-      .join('\n\n');
+    const contextText = contextChunks.map((chunk, i) => `[${i + 1}] ${chunk}`).join('\n\n');
 
     const langInstruction =
-      language === 'de'
-        ? 'Antworte auf Deutsch.'
-        : 'Please respond in English.';
+      language === 'de' ? 'Antworte auf Deutsch.' : 'Please respond in English.';
 
     const prompt = `You are a helpful assistant that answers questions based on provided document context.
 ${langInstruction}
@@ -67,12 +63,18 @@ Answer:`;
     });
 
     if (!response.ok) {
-      this.logger.error(`Embedding generation failed: ${response.status}`);
-      // Return dummy embedding on failure for graceful degradation
-      return Array.from({ length: 768 }, () => 0);
+      this.logger.error(
+        `Embedding generation failed: HTTP ${response.status} ${response.statusText} — ` +
+          `model "nomic-embed-text" may not be loaded in Ollama. ` +
+          `Run: ollama pull nomic-embed-text`,
+      );
+      throw new ServiceUnavailableException('Embedding generation failed');
     }
 
     const data = (await response.json()) as { embedding: number[] };
+    this.logger.debug(
+      `Embedding generated: ${data.embedding.length} dimensions for "${text.slice(0, 60)}..."`,
+    );
     return data.embedding;
   }
 }

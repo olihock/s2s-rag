@@ -41,9 +41,24 @@ export class ChatController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ChatQueryResult> {
     const queryLanguage: SupportedLanguage = dto.language ?? 'en';
+    this.logger.log(
+      `Chat query [user=${user.id}] lang=${queryLanguage}: "${dto.message.slice(0, 80)}"`,
+    );
 
     const embedding = await this.llmService.generateEmbedding(dto.message);
+    this.logger.debug(`Embedding ready (${embedding.length} dims) — running vector search`);
+
     const searchResults = await this.vectorService.search(embedding, user.id);
+    this.logger.log(
+      `Vector search returned ${searchResults.length} chunk(s): ` +
+        searchResults
+          .map((r) => `[${r.documentId.slice(0, 8)} sim=${r.similarity.toFixed(3)}]`)
+          .join(' '),
+    );
+
+    if (searchResults.length === 0) {
+      this.logger.warn(`No chunks found for user ${user.id} — answer will be based on no context`);
+    }
 
     const contextChunks = searchResults.map((r) => r.chunkText);
     const answer = await this.llmService.generateAnswer(dto.message, contextChunks, queryLanguage);
