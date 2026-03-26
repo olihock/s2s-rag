@@ -12,9 +12,8 @@ import { ApiTags, ApiBearerAuth, ApiConsumes, ApiOperation } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthenticatedUser } from '../auth/current-user.decorator';
 import { SttService } from '../services/stt.service';
-import { LlmService } from '../services/llm.service';
+import { RagService, toSupportedLanguage } from '../services/rag.service';
 import { TtsService } from '../services/tts.service';
-import { VectorService } from '../vector/vector.service';
 import { SupportedLanguage, VoiceQueryResult } from '../types';
 
 @ApiTags('voice')
@@ -26,9 +25,8 @@ export class VoiceController {
 
   constructor(
     private readonly sttService: SttService,
-    private readonly llmService: LlmService,
+    private readonly ragService: RagService,
     private readonly ttsService: TtsService,
-    private readonly vectorService: VectorService,
   ) {}
 
   @Post('query')
@@ -40,22 +38,19 @@ export class VoiceController {
     @CurrentUser() user: AuthenticatedUser,
     @Body('language') language?: SupportedLanguage,
   ): Promise<VoiceQueryResult> {
-    const transcription = await this.sttService.transcribe(
-      audioFile.buffer,
-      audioFile.mimetype,
-    );
+    const transcription = await this.sttService.transcribe(audioFile.buffer, audioFile.mimetype);
 
     const queryLanguage: SupportedLanguage =
-      language ?? (transcription.language as SupportedLanguage) ?? 'en';
+      language ?? toSupportedLanguage(transcription.language);
 
-    const embedding = await this.llmService.generateEmbedding(transcription.text);
-    const searchResults = await this.vectorService.search(embedding, user.id);
+    this.logger.log(
+      `Voice query [user=${user.id}] lang=${queryLanguage} (detected=${transcription.language}): "${transcription.text.slice(0, 80)}"`,
+    );
 
-    const contextChunks = searchResults.map((r) => r.chunkText);
-    const answer = await this.llmService.generateAnswer(
+    const { answer, sources } = await this.ragService.query(
       transcription.text,
-      contextChunks,
       queryLanguage,
+      user.id,
     );
 
     let audioUrl: string | undefined;
@@ -70,12 +65,7 @@ export class VoiceController {
       transcription: transcription.text,
       answer,
       audioUrl,
-      sources: searchResults.map((r) => ({
-        documentId: r.documentId,
-        filename: '',
-        chunkText: r.chunkText,
-        similarity: r.similarity,
-      })),
+      sources,
       language: queryLanguage,
     };
   }

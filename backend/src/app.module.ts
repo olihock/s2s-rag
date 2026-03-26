@@ -17,6 +17,7 @@ import { OcrService } from './services/ocr.service';
 import { FoldersService } from './services/folders.service';
 import { RecycleBinService } from './services/recycle-bin.service';
 import { UserService } from './services/user.service';
+import { RagService } from './services/rag.service';
 import { RecycleBinCleanupJob } from './jobs/recycle-bin-cleanup.job';
 import { SharedFolderGuard } from './guards/shared-folder.guard';
 import { LoggingMiddleware } from './middleware/logging.middleware';
@@ -40,6 +41,7 @@ import { LoggingMiddleware } from './middleware/logging.middleware';
     FoldersService,
     RecycleBinService,
     UserService,
+    RagService,
     RecycleBinCleanupJob,
     SharedFolderGuard,
   ],

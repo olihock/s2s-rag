@@ -4,9 +4,7 @@ import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthenticatedUser } from '../auth/current-user.decorator';
-import { LlmService } from '../services/llm.service';
-import { VectorService } from '../vector/vector.service';
-import { PrismaService } from '../db/prisma.service';
+import { RagService } from '../services/rag.service';
 import { SupportedLanguage, ChatQueryResult } from '../types';
 import { UseGuards } from '@nestjs/common';
 
@@ -28,11 +26,7 @@ export class ChatQueryDto {
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(
-    private readonly llmService: LlmService,
-    private readonly vectorService: VectorService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly ragService: RagService) {}
 
   @Post('query')
   @ApiOperation({ summary: 'Text Q&A across all user documents' })
@@ -45,36 +39,7 @@ export class ChatController {
       `Chat query [user=${user.id}] lang=${queryLanguage}: "${dto.message.slice(0, 80)}"`,
     );
 
-    const embedding = await this.llmService.generateEmbedding(dto.message);
-    this.logger.debug(`Embedding ready (${embedding.length} dims) — running vector search`);
-
-    const searchResults = await this.vectorService.search(embedding, user.id);
-    this.logger.log(
-      `Vector search returned ${searchResults.length} chunk(s): ` +
-        searchResults
-          .map((r) => `[${r.documentId.slice(0, 8)} sim=${r.similarity.toFixed(3)}]`)
-          .join(' '),
-    );
-
-    if (searchResults.length === 0) {
-      this.logger.warn(`No chunks found for user ${user.id} — answer will be based on no context`);
-    }
-
-    const contextChunks = searchResults.map((r) => r.chunkText);
-    const answer = await this.llmService.generateAnswer(dto.message, contextChunks, queryLanguage);
-
-    const sources = await Promise.all(
-      searchResults.map(async (r) => {
-        const doc = await this.prisma.document.findUnique({ where: { id: r.documentId } });
-        return {
-          documentId: r.documentId,
-          filename: doc?.filename ?? '',
-          chunkText: r.chunkText,
-          similarity: r.similarity,
-        };
-      }),
-    );
-
+    const { answer, sources } = await this.ragService.query(dto.message, queryLanguage, user.id);
     return { answer, sources };
   }
 }
