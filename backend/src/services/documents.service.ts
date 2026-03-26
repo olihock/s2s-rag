@@ -131,6 +131,27 @@ export class DocumentsService {
     });
   }
 
+  async hardDelete(id: string, userId: string): Promise<void> {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.ownerId !== userId) throw new ForbiddenException();
+
+    // Clean up any orphaned recycle bin entry
+    await this.prisma.recycleBin.deleteMany({ where: { itemId: id, itemType: 'document' } });
+
+    // Hard-delete the document record
+    await this.prisma.document.delete({ where: { id } });
+
+    // Best-effort Milvus cleanup — DB delete always wins
+    this.vectorService
+      .deleteByDocumentId(id)
+      .catch((err: unknown) =>
+        this.logger.warn(
+          `Milvus vector cleanup failed for document ${id}: ${(err as Error).message}`,
+        ),
+      );
+  }
+
   detectLanguage(text: string): SupportedLanguage {
     // Heuristic: count common German words
     const germanWords = [

@@ -15,6 +15,7 @@ import {
   createFolder,
   deleteFolder,
   listRecycleBin,
+  deleteDocument,
   login,
   register,
 } from './services/api';
@@ -43,6 +44,7 @@ export default function App(): React.ReactElement {
   const [shareFolderId, setShareFolderId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -54,6 +56,22 @@ export default function App(): React.ReactElement {
     setDocuments(docs);
     setFolders(fols);
     setRecycleBinItems(bin);
+  };
+
+  const handleDeleteDocument = async (id: string): Promise<void> => {
+    if (
+      !window.confirm(
+        'Dieses Dokument wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      )
+    )
+      return;
+    setDeleteError(null);
+    try {
+      await deleteDocument(id);
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch {
+      setDeleteError('Löschen fehlgeschlagen. Bitte versuche es erneut.');
+    }
   };
 
   useEffect(() => {
@@ -178,11 +196,17 @@ export default function App(): React.ReactElement {
               <span className="text-sm text-gray-400">{documents.length} document(s)</span>
             </div>
 
+            {deleteError && (
+              <p role="alert" className="text-sm text-red-600">
+                {deleteError}
+              </p>
+            )}
+
             <ul className="space-y-2">
               {documents.map((doc) => (
                 <li
                   key={doc.id}
-                  className="bg-white rounded-lg p-3 shadow-sm flex items-center gap-3"
+                  className="group bg-white rounded-lg p-3 shadow-sm flex items-center gap-3"
                 >
                   <svg
                     className="h-5 w-5 text-red-400 flex-shrink-0"
@@ -212,6 +236,21 @@ export default function App(): React.ReactElement {
                   >
                     {doc.status}
                   </span>
+                  <button
+                    aria-label={`Delete ${doc.filename}`}
+                    onClick={() => void handleDeleteDocument(doc.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1 rounded"
+                    title="Dokument dauerhaft löschen"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
                 </li>
               ))}
             </ul>

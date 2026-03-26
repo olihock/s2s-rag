@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../db/prisma.service';
+import { VectorService } from '../vector/vector.service';
 import { RecycleBinItem, RecycleBinItemType } from '../types';
 import { RecycleBin } from '@prisma/client';
 
@@ -9,7 +10,10 @@ const RETENTION_DAYS = 30;
 export class RecycleBinService {
   private readonly logger = new Logger(RecycleBinService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly vectorService: VectorService,
+  ) {}
 
   async moveToRecycleBin(
     userId: string,
@@ -67,6 +71,11 @@ export class RecycleBinService {
       await this.prisma.document.delete({ where: { id: item.itemId } }).catch(() => {
         this.logger.warn(`Document ${item.itemId} already deleted`);
       });
+      this.vectorService
+        .deleteByDocumentId(item.itemId)
+        .catch((err: unknown) =>
+          this.logger.warn(`Milvus cleanup failed for ${item.itemId}: ${(err as Error).message}`),
+        );
     } else {
       await this.prisma.folder.delete({ where: { id: item.itemId } }).catch(() => {
         this.logger.warn(`Folder ${item.itemId} already deleted`);
