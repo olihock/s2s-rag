@@ -41,44 +41,57 @@ describe('RecycleBinService', () => {
   describe('moveToRecycleBin()', () => {
     it('should create a recycle bin record for a document', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({
-        id: 'doc-1', ownerId: 'user-1', filename: 'test.pdf',
+        id: 'doc-1',
+        ownerId: 'user-1',
+        filename: 'test.pdf',
       });
       mockPrisma.recycleBin.create.mockResolvedValue({
-        id: 'rb-1', itemId: 'doc-1', itemType: 'DOCUMENT',
-        ownerId: 'user-1', deletedAt: new Date(),
+        id: 'rb-1',
+        itemId: 'doc-1',
+        itemType: 'document',
+        userId: 'user-1',
+        deletedAt: new Date(),
       });
 
-      const result = await service.moveToRecycleBin('user-1', 'doc-1', 'DOCUMENT');
-      expect(result).toHaveProperty('id');
+      await service.moveToRecycleBin('user-1', 'document', 'doc-1', '/');
       expect(mockPrisma.recycleBin.create).toHaveBeenCalledOnce();
     });
 
     it('should create a recycle bin record for a folder', async () => {
       mockPrisma.folder.findUnique.mockResolvedValue({
-        id: 'f1', ownerId: 'user-1', name: 'Work',
+        id: 'f1',
+        ownerId: 'user-1',
+        name: 'Work',
       });
       mockPrisma.recycleBin.create.mockResolvedValue({
-        id: 'rb-2', itemId: 'f1', itemType: 'FOLDER',
-        ownerId: 'user-1', deletedAt: new Date(),
+        id: 'rb-2',
+        itemId: 'f1',
+        itemType: 'folder',
+        userId: 'user-1',
+        deletedAt: new Date(),
       });
 
-      const result = await service.moveToRecycleBin('user-1', 'f1', 'FOLDER');
-      expect(result.itemType).toBe('FOLDER');
+      await service.moveToRecycleBin('user-1', 'folder', 'f1', '/');
+      expect(mockPrisma.recycleBin.create).toHaveBeenCalledOnce();
     });
 
     it('should throw if item does not belong to user', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({
-        id: 'doc-1', ownerId: 'other-user',
+        id: 'doc-1',
+        ownerId: 'other-user',
       });
 
-      await expect(service.moveToRecycleBin('user-1', 'doc-1', 'DOCUMENT')).rejects.toThrow();
+      await expect(service.moveToRecycleBin('user-1', 'document', 'doc-1', '/')).rejects.toThrow();
     });
   });
 
   describe('restore()', () => {
     it('should restore a document from the recycle bin', async () => {
       mockPrisma.recycleBin.findUnique.mockResolvedValue({
-        id: 'rb-1', itemId: 'doc-1', itemType: 'DOCUMENT', ownerId: 'user-1',
+        id: 'rb-1',
+        itemId: 'doc-1',
+        itemType: 'document',
+        userId: 'user-1',
       });
       mockPrisma.document.update.mockResolvedValue({ id: 'doc-1', status: 'active' });
       mockPrisma.recycleBin.delete.mockResolvedValue({ id: 'rb-1' });
@@ -96,7 +109,10 @@ describe('RecycleBinService', () => {
   describe('permanentDelete()', () => {
     it('should delete a document permanently and from Milvus', async () => {
       mockPrisma.recycleBin.findUnique.mockResolvedValue({
-        id: 'rb-1', itemId: 'doc-1', itemType: 'DOCUMENT', ownerId: 'user-1',
+        id: 'rb-1',
+        itemId: 'doc-1',
+        itemType: 'document',
+        userId: 'user-1',
       });
       mockPrisma.document.delete.mockResolvedValue({ id: 'doc-1' });
       mockPrisma.recycleBin.delete.mockResolvedValue({ id: 'rb-1' });
@@ -106,13 +122,54 @@ describe('RecycleBinService', () => {
       expect(mockVector.deleteByDocumentId).toHaveBeenCalledWith('doc-1');
       expect(mockPrisma.document.delete).toHaveBeenCalledOnce();
     });
+
+    it('should succeed even when Milvus throws during permanent delete (best-effort)', async () => {
+      mockPrisma.recycleBin.findUnique.mockResolvedValue({
+        id: 'rb-1',
+        itemId: 'doc-1',
+        itemType: 'document',
+        userId: 'user-1',
+      });
+      mockPrisma.document.delete.mockResolvedValue({ id: 'doc-1' });
+      mockPrisma.recycleBin.delete.mockResolvedValue({ id: 'rb-1' });
+      mockVector.deleteByDocumentId.mockRejectedValueOnce(new Error('Milvus unavailable'));
+
+      await expect(service.permanentDelete('user-1', 'rb-1')).resolves.toBeUndefined();
+    });
+
+    it('should NOT call deleteByDocumentId when item type is folder', async () => {
+      mockPrisma.recycleBin.findUnique.mockResolvedValue({
+        id: 'rb-2',
+        itemId: 'folder-1',
+        itemType: 'folder',
+        userId: 'user-1',
+      });
+      mockPrisma.folder.delete.mockResolvedValue({ id: 'folder-1' });
+      mockPrisma.recycleBin.delete.mockResolvedValue({ id: 'rb-2' });
+
+      await service.permanentDelete('user-1', 'rb-2');
+      expect(mockVector.deleteByDocumentId).not.toHaveBeenCalled();
+    });
   });
 
   describe('autoCleanup()', () => {
     it('should delete all entries older than 30 days', async () => {
       mockPrisma.recycleBin.findMany.mockResolvedValue([
-        { id: 'rb-old-1', itemId: 'doc-old-1', itemType: 'DOCUMENT', ownerId: 'user-1', deletedAt: new Date('2020-01-01') },
+        {
+          id: 'rb-old-1',
+          itemId: 'doc-old-1',
+          itemType: 'document',
+          userId: 'user-1',
+          deletedAt: new Date('2020-01-01'),
+        },
       ]);
+      mockPrisma.recycleBin.findUnique.mockResolvedValue({
+        id: 'rb-old-1',
+        itemId: 'doc-old-1',
+        itemType: 'document',
+        userId: 'user-1',
+        deletedAt: new Date('2020-01-01'),
+      });
       mockPrisma.document.delete.mockResolvedValue({ id: 'doc-old-1' });
       mockPrisma.recycleBin.delete.mockResolvedValue({ id: 'rb-old-1' });
       mockVector.deleteByDocumentId.mockResolvedValue(undefined);
@@ -132,7 +189,13 @@ describe('RecycleBinService', () => {
   describe('listItems()', () => {
     it('should return all recycle bin items for user', async () => {
       mockPrisma.recycleBin.findMany.mockResolvedValue([
-        { id: 'rb-1', itemId: 'doc-1', itemType: 'DOCUMENT', ownerId: 'user-1', deletedAt: new Date() },
+        {
+          id: 'rb-1',
+          itemId: 'doc-1',
+          itemType: 'DOCUMENT',
+          userId: 'user-1',
+          deletedAt: new Date(),
+        },
       ]);
 
       const items = await service.listItems('user-1');

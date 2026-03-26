@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+  title: Delete Document API Contract
+  version: 0.1.0
+  description: REST API contract for hard-deleting a document (PostgreSQL + Milvus cleanup)
+servers:
+  - url: /api
+paths:
+  /documents/{id}:
+    delete:
+      summary: Hard-delete a document by ID
+      description: |
+        Permanently removes the document record from PostgreSQL and all associated
+        embedding vectors from Milvus. Bypasses the recycle bin entirely.
+        Only the document owner may delete. Milvus cleanup is best-effort
+        (DB delete always succeeds; Milvus failure is logged, not returned).
+      tags:
+        - documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the document to delete
+          schema:
+            type: string
+            format: uuid
+            example: '3fa85f64-5717-4562-b3fc-2c963f66afa6'
+      responses:
+        '204':
+          description: Document permanently deleted (no content)
+        '401':
+          description: Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Requesting user does not own the document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 403
+                message: Forbidden resource
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 404
+                message: Document not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Document not found
+      required:
+        - statusCode
+        - message

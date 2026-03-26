@@ -16,7 +16,7 @@
 #
 # OUTPUTS:
 #   JSON mode: {"FEATURE_DIR":"...", "AVAILABLE_DOCS":["..."]}
-#   Text mode: FEATURE_DIR:... \n AVAILABLE_DOCS: \n ✓/✗ file.md
+#   Text mode: FEATURE_DIR:... \n AVAILABLE_DOCS: \n âœ“/âœ— file.md
 #   Paths only: REPO_ROOT: ... \n BRANCH: ... \n FEATURE_DIR: ... etc.
 
 set -e

@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
+  HttpCode,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -12,7 +14,7 @@ import {
   Response as Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiBearerAuth, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthenticatedUser } from '../auth/current-user.decorator';
@@ -76,6 +78,16 @@ export class DocumentsController {
     return { message: 'Document re-enabled in search' };
   }
 
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Permanently delete a document and its Milvus vectors' })
+  @ApiResponse({ status: 204, description: 'Document permanently deleted' })
+  @ApiResponse({ status: 403, description: 'Forbidden — not the document owner' })
+  @ApiResponse({ status: 404, description: 'Document not found' })
+  async deleteDocument(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.documentsService.hardDelete(id, user.id);
+  }
+
   @Post(':id/query')
   @UseInterceptors(FileInterceptor('audio'))
   @ApiConsumes('multipart/form-data')
@@ -88,12 +100,10 @@ export class DocumentsController {
     @Body('language') language?: SupportedLanguage,
   ): Promise<VoiceQueryResult> {
     // Transcribe audio
-    const transcription = await this.sttService.transcribe(
-      audioFile.buffer,
-      audioFile.mimetype,
-    );
+    const transcription = await this.sttService.transcribe(audioFile.buffer, audioFile.mimetype);
 
-    const queryLanguage: SupportedLanguage = language ?? (transcription.language as SupportedLanguage) ?? 'en';
+    const queryLanguage: SupportedLanguage =
+      language ?? (transcription.language as SupportedLanguage) ?? 'en';
 
     // Generate query embedding and search
     const embedding = await this.llmService.generateEmbedding(transcription.text);

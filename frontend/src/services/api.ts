@@ -78,6 +78,10 @@ export async function reEnableDocument(id: string): Promise<void> {
   await api.patch(`/documents/${id}/re-enable`);
 }
 
+export async function deleteDocument(id: string): Promise<void> {
+  await api.delete(`/documents/${id}`);
+}
+
 // ──────────────── Voice Q&A ────────────────
 export async function queryWithVoice(
   audio: Blob,

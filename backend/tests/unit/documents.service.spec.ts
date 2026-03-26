@@ -10,6 +10,9 @@ const mockPrisma = {
     update: vi.fn(),
     delete: vi.fn(),
   },
+  recycleBin: {
+    deleteMany: vi.fn(),
+  },
 };
 
 const mockVectorService = {
@@ -129,6 +132,68 @@ describe('DocumentsService (US1)', () => {
       });
 
       await expect(service.excludeFromSearch('doc-1', 'user-1')).rejects.toThrow('Forbidden');
+    });
+  });
+
+  describe('hardDelete', () => {
+    const activeDoc = { id: 'doc-1', ownerId: 'user-1', status: 'active' };
+    const excludedDoc = { id: 'doc-1', ownerId: 'user-1', status: 'excluded' };
+    const recycleBinDoc = { id: 'doc-1', ownerId: 'user-1', status: 'recycle_bin' };
+
+    beforeEach(() => {
+      mockPrisma.recycleBin.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.document.delete.mockResolvedValue(activeDoc);
+      mockVectorService.deleteByDocumentId.mockResolvedValue(undefined);
+    });
+
+    it('should throw NotFoundException when document does not exist', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(null);
+      await expect(service.hardDelete('doc-1', 'user-1')).rejects.toThrow('Document not found');
+    });
+
+    it('should throw ForbiddenException when user is not the owner', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce({ id: 'doc-1', ownerId: 'other-user' });
+      await expect(service.hardDelete('doc-1', 'user-1')).rejects.toThrow('Forbidden');
+    });
+
+    it('should permanently delete the document from the database', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(activeDoc);
+      await service.hardDelete('doc-1', 'user-1');
+      expect(mockPrisma.document.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
+    });
+
+    it('should call vectorService.deleteByDocumentId with the document id', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(activeDoc);
+      await service.hardDelete('doc-1', 'user-1');
+      // Allow async fire-and-forget to settle
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockVectorService.deleteByDocumentId).toHaveBeenCalledWith('doc-1');
+    });
+
+    it('should delete any orphaned RecycleBin entry for the document', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(activeDoc);
+      await service.hardDelete('doc-1', 'user-1');
+      expect(mockPrisma.recycleBin.deleteMany).toHaveBeenCalledWith({
+        where: { itemId: 'doc-1', itemType: 'document' },
+      });
+    });
+
+    it('should succeed even when Milvus throws (best-effort)', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(activeDoc);
+      mockVectorService.deleteByDocumentId.mockRejectedValueOnce(new Error('Milvus unavailable'));
+      await expect(service.hardDelete('doc-1', 'user-1')).resolves.toBeUndefined();
+    });
+
+    it('should succeed when document status is excluded', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(excludedDoc);
+      await expect(service.hardDelete('doc-1', 'user-1')).resolves.toBeUndefined();
+      expect(mockPrisma.document.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
+    });
+
+    it('should succeed when document status is recycle_bin', async () => {
+      mockPrisma.document.findUnique.mockResolvedValueOnce(recycleBinDoc);
+      await expect(service.hardDelete('doc-1', 'user-1')).resolves.toBeUndefined();
+      expect(mockPrisma.document.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
     });
   });
 });
